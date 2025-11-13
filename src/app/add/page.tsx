@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';   // ★ 追加
 import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 
@@ -15,7 +15,6 @@ type InsertPayload = {
 
 export default function AddPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   // フォーム状態
   const [name, setName] = useState('');
@@ -24,19 +23,19 @@ export default function AddPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // ← 追加：date input を手動で開くための参照
+  // ← date input を手動で開くための参照
   const dateRef = useRef<HTMLInputElement | null>(null);
 
-  // 未ログインならログインへ（DAY4のガード）
+  // 🔒 未ログインならログインへ（DAY4のガード）
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        const next = searchParams?.get('next') ?? '/add';
-        router.replace(`/login?next=${encodeURIComponent(next)}`);
+        // ★ useSearchParams をやめて、常に /add を next として渡す
+        router.replace(`/login?next=${encodeURIComponent('/add')}`);
       }
     })();
-  }, [router, searchParams]);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +54,7 @@ export default function AddPage() {
     setLoading(true);
     const t = toast.loading('保存中…');
     try {
-      // ログインユーザー
+      // ログインユーザー取得
       const { data: userRes, error: userErr } = await supabase.auth.getUser();
       if (userErr) throw userErr;
       const user = userRes?.user;
@@ -76,7 +75,7 @@ export default function AddPage() {
       if (error) throw error;
 
       toast.success('保存しました！', { id: t });
-      router.push('/'); // 成功後トップへ（後で /list に変更可）
+      router.push('/'); // 成功後トップへ
     } catch (e: any) {
       const msg = e?.message ?? '保存に失敗しました。もう一度お試しください。';
       setErr(msg);
@@ -90,7 +89,9 @@ export default function AddPage() {
     <main className="mx-auto max-w-md p-6">
       {/* 簡易ナビ（戻る） */}
       <div className="mb-4">
-        <Link href="/" className="text-sm underline">← 戻る</Link>
+        <Link href="/" className="text-sm underline">
+          ← 戻る
+        </Link>
       </div>
 
       <h1 className="mb-4 text-2xl font-bold">食材を追加</h1>
