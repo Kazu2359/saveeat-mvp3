@@ -10,6 +10,7 @@ import ExpiryNotifier from "@/components/ExpiryNotifier";
 import { deleteItem } from "./inventory/actions"; // or "@/app/inventory/actions"
 
 
+
 type Item = {
   id: string;
   name: string;
@@ -39,22 +40,28 @@ function badgeClass(days: number | null) {
 export default async function Home({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const supabase = await createClient();
 
-  // ✅ 文字列/配列/undefined どれでも安全に1つの文字列へするヘルパ
+  // Next.js 16 では searchParams が Promise なので await する
+  const sp = (await searchParams) ?? {};
+
+  // 文字列/配列/undefined を安全に1つの文字列へ
   const sv = (v: unknown) =>
     Array.isArray(v) ? (typeof v[0] === "string" ? v[0] : "") : (typeof v === "string" ? v : "");
 
-  const q = sv(searchParams?.q).trim();
+  const q = sv(sp.q).trim();
 
-  const withinRaw = Number(sv(searchParams?.within));
+  const withinRaw = Number(sv(sp.within));
   const within = Number.isFinite(withinRaw) && withinRaw > 0 ? withinRaw : 0;
 
-  const includeExpired = sv(searchParams?.expired) === "on";
-  const includeUnset   = sv(searchParams?.unset)   === "on";
-  const sort           = sv(searchParams?.sort) || "expiry_asc";
+  const includeExpired = sv(sp.expired) === "on";
+  const includeUnset   = sv(sp.unset)   === "on";
+  const sort           = sv(sp.sort) || "expiry_asc";
+  // ↓ この下は今までのロジックのままでOK
+
+
 
   const { data: { user } } = await supabase.auth.getUser();
 
