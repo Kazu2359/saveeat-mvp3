@@ -42,7 +42,7 @@ export default async function EditPage({ params }: PageProps) {
         <p className="mb-2 text-red-500">
           データの取得に失敗しました：{error.message}
         </p>
-        <Link href="/inventory" className="text-blue-400 underline">
+        <Link href="/" className="text-blue-400 underline">
           在庫一覧に戻る
         </Link>
       </main>
@@ -59,7 +59,7 @@ export default async function EditPage({ params }: PageProps) {
         <p className="mb-4 text-xs text-gray-400">
           すでに削除されたか、他のユーザーのデータの可能性があります。
         </p>
-        <Link href="/inventory" className="text-blue-400 underline">
+        <Link href="/" className="text-blue-400 underline">
           在庫一覧に戻る
         </Link>
       </main>

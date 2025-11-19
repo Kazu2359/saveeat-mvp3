@@ -1,76 +1,70 @@
-import { NextResponse } from "next/server";
+// src/app/api/items/[id]/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 
-// 更新時に受け取る可能性のある項目
-type UpdateBody = {
-  name?: string;
-  qty?: number;
-  unit?: string;
-  expires_on?: string | null;
-  note?: string | null;
+// ★ Next.js 16 対応：params は Promise<{ id: string }>
+type RouteParams = {
+  params: Promise<{ id: string }>;
 };
 
-// 🔹 アイテム更新（PATCH /api/items/[id]）
-export async function PATCH(req: any, context: any) {
-  const { params } = await context;
-  const { id } = params;
+// PATCH /api/items/[id] : 食材を更新
+export async function PATCH(req: NextRequest, ctx: RouteParams) {
+  const { id } = await ctx.params;
 
   const supabase = await createClient();
 
+  // 1) ログインユーザー確認（ここで user が取れなければ 401 で返す）
   const {
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
-  let body: UpdateBody;
-  try {
-    body = (await req.json()) as UpdateBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  // 2) body をパースして、更新に使うフィールドだけ取り出す
+  const body = await req.json().catch(() => ({}));
+
+  const updateData: {
+    name?: string;
+    quantity?: number;
+    expiry_date?: string | null;
+  } = {};
+
+  if (typeof body.name === "string") {
+    updateData.name = body.name;
   }
 
+  if (typeof body.quantity === "number") {
+    updateData.quantity = body.quantity;
+  }
+
+  // null or 'YYYY-MM-DD' だけ許可
+  if (body.expiry_date === null || typeof body.expiry_date === "string") {
+    updateData.expiry_date = body.expiry_date;
+  }
+
+  // 3) 自分のレコードだけ更新（id + user_id で絞る）
   const { error } = await supabase
     .from("pantry_items")
-    .update(body)
+    .update(updateData)
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("PATCH /api/items/[id] error:", error);
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 400 }
+    );
   }
 
-  return NextResponse.json({ ok: true }, { status: 200 });
+  return NextResponse.json({ ok: true });
 }
 
-// 🔹 アイテム削除（DELETE /api/items/[id]）
-export async function DELETE(req: any, context: any) {
-  const { params } = await context;
-  const { id } = params;
-
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-
-  if (userErr || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { error } = await supabase
-    .from("pantry_items")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true }, { status: 200 });
-}
+// （DELETE をここで使わないなら、export しなくてOK）
