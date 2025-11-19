@@ -50,7 +50,6 @@ export default function EditItemForm({ initialItem }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          qty: q,
           // サーバー側では quantity / expiry_date など
           // route.ts の実装に合わせて key 名を揃えてください
           quantity: q,
