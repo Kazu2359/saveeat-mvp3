@@ -26,20 +26,46 @@ export default function EditItemPage() {
   const [fetching, setFetching] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
+  // デバッグ用に、クライアント側で見えている user_id も表示しておく
+  const [clientUserId, setClientUserId] = useState<string | null>(null);
+
   const dateRef = useRef<HTMLInputElement | null>(null);
 
-  // 🔍 行を1件だけ取得（ログインチェックはしない。RLSに任せる）
+  // 🔍 行を1件だけ取得（まずはクライアントでログインユーザーを確認）
   useEffect(() => {
     (async () => {
       try {
+        // 1) クライアント側の Supabase でログインユーザーを取得
+        const {
+          data: { user },
+          error: userErr,
+        } = await supabase.auth.getUser();
+
+        if (userErr) {
+          console.error("client getUser error:", userErr);
+        }
+
+        if (!user) {
+          setErr(
+            "ログインが必要です。もう一度ログインしてから編集をお試しください。"
+          );
+          setClientUserId(null);
+          setFetching(false);
+          return;
+        }
+
+        setClientUserId(user.id);
+
+        // 2) id + user_id で 1件だけ取得（RLS とダブルチェック）
         const { data, error } = await supabase
           .from("pantry_items")
           .select("id,user_id,name,quantity,expiry_date")
           .eq("id", id)
+          .eq("user_id", user.id)
           .maybeSingle<ItemRow>(); // 0件でも例外にしない
 
         if (error) {
-          console.error(error);
+          console.error("select error:", error);
           setErr(error.message ?? "データ取得に失敗しました。");
           setFetching(false);
           return;
@@ -47,7 +73,9 @@ export default function EditItemPage() {
 
         if (!data) {
           // RLSで見えない / そもそも存在しない など
-          setErr("データが見つかりませんでした。ログイン状態や権限を確認してください。");
+          setErr(
+            "データが見つかりませんでした。すでに削除されたか、別のユーザーのデータの可能性があります。"
+          );
           setFetching(false);
           return;
         }
@@ -59,7 +87,7 @@ export default function EditItemPage() {
 
         setFetching(false);
       } catch (e: any) {
-        console.error(e);
+        console.error("edit page unexpected error:", e);
         setErr("読み込み中にエラーが発生しました。");
         setFetching(false);
       }
@@ -95,7 +123,7 @@ export default function EditItemPage() {
       if (error) throw error;
 
       toast.success("更新しました！", { id: t });
-      router.push("/");
+      router.push("/inventory");
     } catch (e: any) {
       const msg =
         e?.message ?? "更新に失敗しました。もう一度お試しください。";
@@ -117,7 +145,7 @@ export default function EditItemPage() {
   return (
     <main className="mx-auto max-w-md p-6">
       <div className="mb-4 flex items-center justify-between">
-        <Link href="/" className="text-sm underline">
+        <Link href="/inventory" className="text-sm underline">
           ← 戻る
         </Link>
         <span className="text-xs text-gray-500">ID: {id}</span>
@@ -125,10 +153,14 @@ export default function EditItemPage() {
 
       <h1 className="mb-4 text-2xl font-bold">食材を編集</h1>
 
+      {/* デバッグ用に、クライアント側で見えている user_id を表示 */}
+      <p className="mb-2 text-xs text-gray-500">
+        client user_id: {clientUserId ?? "(未ログイン)"}
+      </p>
+
       {err && (
         <p className="mb-3 text-sm text-red-600">
           {err}
-          {/* ログインページへの導線だけ残しておく */}
           <br />
           <a
             href={`/login?next=/edit/${id}`}
