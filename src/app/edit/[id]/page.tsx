@@ -76,7 +76,7 @@ export default async function EditPage({ params }: PageProps) {
   return (
     <main className="mx-auto max-w-md p-6">
       <div className="mb-4 flex items-center justify-between">
-        <Link href="/inventory" className="text-sm underline">
+        <Link href="/" className="text-sm underline">
           ← 戻る
         </Link>
         <span className="text-xs text-gray-500">ID: {initialItem.id}</span>
