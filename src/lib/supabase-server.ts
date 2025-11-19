@@ -1,3 +1,5 @@
+import "server-only";  // ★これを一番上に追加
+
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
