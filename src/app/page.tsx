@@ -6,15 +6,8 @@ import InventoryListClient, {
   type Item as ClientItem,
 } from "@/components/InventoryListClient";
 import ExpiryNotifier from "@/components/ExpiryNotifier";
+import MealPlanner from "@/components/MealPlanner";
 import { deleteItem } from "./inventory/actions";
-
-type Item = {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string | null;
-  expiry_date: string | null;
-};
 
 export default async function Home({
   searchParams,
@@ -207,6 +200,11 @@ export default async function Home({
           しましょう。
         </p>
       )}
+
+            {user && (
+        <MealPlanner items={items} />
+      )}
+
 
       {/* 一覧（フィルター処理は InventoryListClient 側で実施） */}
       {user && items.length > 0 && (

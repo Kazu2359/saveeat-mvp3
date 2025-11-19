@@ -1,14 +1,9 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Item } from "@/types/item";
 
-export type Item = {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string | null;
-  expiry_date: string | null;
-};
+export type { Item } from "@/types/item";
 
 function daysLeft(dateStr: string | null) {
   if (!dateStr) return null;

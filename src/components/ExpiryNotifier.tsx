@@ -1,11 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 
-type Item = {
-  id: string;
-  name: string;
-  expiry_date: string | null;
-};
+import { Item } from "@/types/item";
 
 function daysLeft(dateStr: string | null) {
   if (!dateStr) return null;
