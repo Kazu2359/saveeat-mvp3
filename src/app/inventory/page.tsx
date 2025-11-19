@@ -12,8 +12,13 @@ type Item = {
   created_at: string;
 };
 
+type SearchParams = {
+  [key: string]: string | string[] | undefined;
+};
+
 type PageProps = {
-  searchParams?: { [key: string]: string | string[] | undefined };
+  // 🔥 Next.js 16 では searchParams が Promise になる想定なのでこうしておく
+  searchParams?: Promise<SearchParams>;
 };
 
 export default async function InventoryPage({ searchParams }: PageProps) {
@@ -21,7 +26,10 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return <main className="p-6">ログインしてください。</main>;
+
+  if (!user) {
+    return <main className="p-6">ログインしてください。</main>;
+  }
 
   const { data, error } = await supabase
     .from("pantry_items")
@@ -39,14 +47,19 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   const allItems = (data ?? []) as Item[];
 
   // ====== URLクエリ → そのまま状態にする ======
-  const sp = searchParams ?? {};
+  let sp: SearchParams = {};
+
+  // 🔥 searchParams は Promise かもしれないので await で中身を取り出す
+  if (searchParams) {
+    const resolved = await searchParams;
+    sp = resolved ?? {};
+  }
 
   // キーワード
   const qParam = Array.isArray(sp.q) ? sp.q[0] : sp.q;
   const q = (qParam ?? "").trim();
 
   // 期限切れ / 未設定 のチェック状態
-  // ★ null のときは false（勝手に true にしない）
   const expiredParam = Array.isArray(sp.expired)
     ? sp.expired[0]
     : sp.expired;
@@ -55,7 +68,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
     : sp.unset;
 
   const includeExpired = expiredParam === "on"; // 「期限切れを含める」
-  const includeUnset = unsetParam === "on";     // 「未設定を含める」
+  const includeUnset = unsetParam === "on"; // 「未設定を含める」
   const hasStatusFilter = includeExpired || includeUnset;
 
   // 期限まで◯日以内
@@ -74,9 +87,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
   // ① キーワード
   if (q) {
     const qLower = q.toLowerCase();
-    items = items.filter((it) =>
-      it.name.toLowerCase().includes(qLower)
-    );
+    items = items.filter((it) => it.name.toLowerCase().includes(qLower));
   }
 
   // ② 期限まで◯日以内
@@ -134,9 +145,6 @@ export default async function InventoryPage({ searchParams }: PageProps) {
             type="checkbox"
             name="expired"
             value="on"
-            // ★ ここがポイント：
-            //   URLに expired=on が付いてるときだけ ON。
-            //   それ以外は絶対にONにしない。
             defaultChecked={includeExpired}
             className="h-4 w-4"
           />
@@ -173,9 +181,7 @@ export default async function InventoryPage({ searchParams }: PageProps) {
         </button>
       </form>
 
-      <div className="mb-2 text-sm text-gray-600">
-        {items.length}件表示中
-      </div>
+      <div className="mb-2 text-sm text-gray-600">{items.length}件表示中</div>
 
       <div className="grid gap-3">
         {items.map((it) => (

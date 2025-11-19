@@ -1,58 +1,66 @@
-// src/app/api/items/[id]/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 
-type RouteParams = { params: { id: string } };
+// 更新時に受け取る可能性のある項目
+type UpdateBody = {
+  name?: string;
+  qty?: number;
+  unit?: string;
+  expires_on?: string | null;
+  note?: string | null;
+};
 
-// 更新（編集）
-export async function PATCH(req: Request, { params }: RouteParams) {
+// 🔹 アイテム更新（PATCH /api/items/[id]）
+export async function PATCH(req: any, context: any) {
+  const { params } = await context;
+  const { id } = params;
+
   const supabase = await createClient();
+
   const {
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    return NextResponse.json({ error: "ログインが必要です。" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const id = params.id;
-  const body = await req.json();
-  const { name, quantity, expiry_date } = body;
+  let body: UpdateBody;
+  try {
+    body = (await req.json()) as UpdateBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from("pantry_items")
-    .update({
-      name,
-      quantity,
-      expiry_date: expiry_date || null,
-    })
+    .update(body)
     .eq("id", id)
-    .eq("user_id", user.id); // 自分のレコードだけ
+    .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message ?? "更新に失敗しました。" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { status: 200 });
 }
 
-// 削除
-export async function DELETE(_req: Request, { params }: RouteParams) {
+// 🔹 アイテム削除（DELETE /api/items/[id]）
+export async function DELETE(req: any, context: any) {
+  const { params } = await context;
+  const { id } = params;
+
   const supabase = await createClient();
+
   const {
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    return NextResponse.json({ error: "ログインが必要です。" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const id = params.id;
 
   const { error } = await supabase
     .from("pantry_items")
@@ -61,11 +69,8 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
     .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message ?? "削除に失敗しました。" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { status: 200 });
 }
