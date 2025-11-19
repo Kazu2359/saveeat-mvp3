@@ -65,7 +65,7 @@ export default function EditItemForm({ initialItem }: Props) {
       }
 
       toast.success("更新しました！", { id: t });
-      router.push("/inventory");
+      router.push("/");
     } catch (e: any) {
       const msg =
         e?.message ?? "更新に失敗しました。もう一度お試しください。";
