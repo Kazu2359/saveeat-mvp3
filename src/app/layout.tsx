@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ToasterClient from "@/components/ToasterClient";
 import PushClient from "@/components/PushClient"; // Push client runs globally so notifications stay registered.
+import AppIntro from "@/components/AppIntro";
 
 export const metadata: Metadata = {
   title: "SaveEat",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" sizes="192x192" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AppIntro />
         {/* Global clients mounted once for notifications/toasts. */}
         <ToasterClient />
         <PushClient />
