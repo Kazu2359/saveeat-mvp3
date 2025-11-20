@@ -5,6 +5,7 @@ import "./globals.css";
 import ToasterClient from "@/components/ToasterClient";
 import PushClient from "@/components/PushClient"; // Push client runs globally so notifications stay registered.
 import AppIntro from "@/components/AppIntro";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "SaveEat",
@@ -40,6 +41,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AppIntro />
+        <header className="sticky top-0 z-40 w-full border-b bg-white/90 backdrop-blur shadow-sm">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+            <Link href="/" className="text-lg font-semibold text-gray-900 hover:text-black">
+              SaveEat
+            </Link>
+            <nav className="flex items-center gap-4 text-sm text-gray-700">
+              <Link href="/feed" className="hover:text-black">
+                みんなの料理
+              </Link>
+              <Link href="/myposts" className="hover:text-black">
+                マイ投稿
+              </Link>
+              <Link
+                href="/upload"
+                className="rounded-full bg-black px-4 py-2 !text-white hover:bg-gray-800 transition shadow-sm"
+              >
+                投稿する
+              </Link>
+            </nav>
+          </div>
+        </header>
         {/* Global clients mounted once for notifications/toasts. */}
         <ToasterClient />
         <PushClient />
