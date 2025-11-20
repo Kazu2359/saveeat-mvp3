@@ -1,4 +1,4 @@
-// src/app/add/AddForm.tsx
+﻿// src/app/add/AddForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,7 +13,7 @@ function formatDateYYYYMMDD(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-export default function AddForm({ userId }: { userId: string }) {
+export default function AddForm() {
   const router = useRouter();
 
   const [name, setName] = useState("");
@@ -27,7 +27,7 @@ export default function AddForm({ userId }: { userId: string }) {
     setErr(null);
 
     if (!name.trim()) {
-      setErr("食材名は必須です");
+      setErr("食材名を入力してください");
       return;
     }
 
@@ -56,8 +56,9 @@ export default function AddForm({ userId }: { userId: string }) {
       }
 
       router.push("/");
-    } catch (e: any) {
-      setErr(e?.message ?? "保存に失敗しました");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "保存に失敗しました";
+      setErr(message);
     } finally {
       setLoading(false);
     }
@@ -89,9 +90,7 @@ export default function AddForm({ userId }: { userId: string }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
-          消費期限（任意）
-        </label>
+        <label className="block text-sm font-medium mb-1">消費期限（任意）</label>
         <div className="w-full">
           <DatePicker
             selected={expiry}

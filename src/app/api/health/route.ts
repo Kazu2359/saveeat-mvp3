@@ -9,7 +9,8 @@ export async function GET() {
       .select('id', { count: 'exact', head: true });
     if (error) throw error;
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "unknown_error";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

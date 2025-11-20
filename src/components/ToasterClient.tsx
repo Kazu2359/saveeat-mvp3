@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Toaster } from "react-hot-toast";
 
 export default function ToasterClient({ message }: { message?: string }) {
   const [text, setText] = useState<string | null>(message ?? null);

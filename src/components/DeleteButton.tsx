@@ -1,4 +1,4 @@
-// src/components/DeleteButton.tsx
+﻿// src/components/DeleteButton.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -21,10 +21,10 @@ export default function DeleteButton({ id }: { id: string }) {
         throw new Error(data.error ?? "削除に失敗しました");
       }
 
-      // 一覧を更新
       router.refresh();
-    } catch (e: any) {
-      alert(e?.message ?? "削除に失敗しました");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "削除に失敗しました";
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -37,7 +37,7 @@ export default function DeleteButton({ id }: { id: string }) {
       disabled={loading}
       className="text-xs text-red-600 underline hover:text-red-800 disabled:opacity-50"
     >
-      🗑️削除
+      🗑️ 削除
     </button>
   );
 }

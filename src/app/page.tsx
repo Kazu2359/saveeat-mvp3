@@ -8,6 +8,7 @@ import InventoryListClient, {
 import ExpiryNotifier from "@/components/ExpiryNotifier";
 import MealPlanner from "@/components/MealPlanner";
 import { deleteItem } from "./inventory/actions";
+import Link from "next/link";
 
 export default async function Home({
   searchParams,
@@ -160,12 +161,12 @@ export default async function Home({
           >
             適用
           </button>
-          <a
+          <Link
             href="/"
             className="px-4 py-2 border rounded-lg text-sm text-gray-700 hover:bg-gray-50"
           >
             ✖ 全解除
-          </a>
+          </Link>
         </div>
 
         <div className="sm:ml-auto text-sm text-gray-600">
@@ -174,19 +175,19 @@ export default async function Home({
       </form>
 
       {/* 追加ボタン・メッセージなど */}
-      <a
+      <Link
         href={user ? "/add" : "/login"}
         className="inline-block bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition font-semibold"
       >
         ＋ 食材を追加
-      </a>
+      </Link>
 
       {!user && (
         <p className="mt-6 text-gray-700">
           まずは{" "}
-          <a className="underline" href="/login">
+          <Link className="underline" href="/login">
             ログイン
-          </a>{" "}
+          </Link>{" "}
           してください。
         </p>
       )}
@@ -194,9 +195,9 @@ export default async function Home({
       {user && items.length === 0 && (
         <p className="mt-6 text-gray-700">
           まだ食材がありません。
-          <a className="underline" href="/add">
+          <Link className="underline" href="/add">
             最初の1件を追加
-          </a>
+          </Link>
           しましょう。
         </p>
       )}
