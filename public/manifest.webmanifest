@@ -1,10 +1,13 @@
 {
+  "_comment": "PWA manifest so SaveEat can install to home screens.",
   "name": "SaveEat",
   "short_name": "SaveEat",
-  "description": "食材の期限管理をもっとカンタンに",
+  "description": "Track ingredient expirations with ease.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "lang": "ja",
   "background_color": "#ffffff",
   "theme_color": "#111111",
   "icons": [
