@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase-server";
 import { Post } from "@/types/post";
+import DeletePostButton from "@/components/DeletePostButton";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,7 @@ export default async function MyPostsPage() {
               <div className="flex flex-col gap-1 px-4 py-3">
                 <p className="text-xs uppercase tracking-wider text-emerald-700">Your post</p>
                 <p className="text-base font-semibold text-gray-900 line-clamp-2">{post.title}</p>
-                <div className="flex gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs">
                   <Link
                     href={`/posts/${post.id}`}
                     className="rounded-full border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-100"
@@ -85,6 +86,7 @@ export default async function MyPostsPage() {
                   >
                     Edit
                   </Link>
+                  <DeletePostButton postId={post.id} postTitle={post.title} />
                 </div>
               </div>
             </div>
