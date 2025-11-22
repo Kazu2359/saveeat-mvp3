@@ -1,4 +1,4 @@
-﻿// src/app/layout.tsx
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -6,6 +6,7 @@ import ToasterClient from "@/components/ToasterClient";
 import PushClient from "@/components/PushClient"; // Push client runs globally so notifications stay registered.
 import AppIntro from "@/components/AppIntro";
 import Link from "next/link";
+import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "SaveEat",
@@ -48,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="flex items-center gap-4 text-sm text-gray-700">
               <Link href="/feed" className="hover:text-black">
-                みんなの料理
+                みんなの投稿
               </Link>
               <Link href="/myposts" className="hover:text-black">
                 マイ投稿
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               >
                 投稿する
               </Link>
+              <LogoutButton />
             </nav>
           </div>
         </header>
