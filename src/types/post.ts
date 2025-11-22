@@ -20,4 +20,5 @@ export type Post = {
   like_count?: number;
   comment_count?: number;
   is_liked?: boolean;
+  likers?: string[];
 };

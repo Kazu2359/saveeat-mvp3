@@ -20,6 +20,7 @@ type Props = {
     created_at: string;
     user_id: string;
   }[];
+  initialLikers?: string[];
 };
 
 function copyToClipboard(text: string) {
@@ -46,8 +47,10 @@ export default function PostInteractionPanel({
   initialCommentCount,
   initialIsLiked,
   initialComments,
+  initialLikers,
 }: Props) {
   const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [likers, setLikers] = useState(initialLikers ?? []);
   const [commentCount, setCommentCount] = useState(initialComments?.length ?? initialCommentCount ?? 0);
   const [isLiked, setIsLiked] = useState<boolean>(!!initialIsLiked);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -66,6 +69,9 @@ export default function PostInteractionPanel({
         setLikeCount(json.like_count ?? likeCount);
         setCommentCount(json.comment_count ?? commentCount);
         setIsLiked(!!json.is_liked);
+        if (Array.isArray(json.likers)) {
+          setLikers(json.likers.filter(Boolean));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -90,7 +96,7 @@ export default function PostInteractionPanel({
         const msg = err instanceof Error ? err.message : "いいねに失敗しました";
         setLikeError(msg);
       } finally {
-        refreshStats();
+        await refreshStats();
       }
     });
   };
@@ -155,7 +161,7 @@ export default function PostInteractionPanel({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800">
         <button
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 shadow-sm ring-1 ring-black/5 transition ${
             isLiked ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-white hover:bg-emerald-50"
@@ -184,6 +190,18 @@ export default function PostInteractionPanel({
         {shareMsg && <span className="text-xs text-emerald-700">{shareMsg}</span>}
         {likeError && <span className="text-xs text-red-600">{likeError}</span>}
       </div>
+
+      {likers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-700">
+          <span className="font-semibold text-gray-900">Liked by</span>
+          {likers.slice(0, 6).map((u) => (
+            <span key={u} className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-emerald-700">
+              {u?.slice(0, 8) ?? "user"}
+            </span>
+          ))}
+          {likers.length > 6 && <span className="text-gray-500">+{likers.length - 6} more</span>}
+        </div>
+      )}
 
       {body && (
         <div className="rounded-2xl border border-white/60 bg-white px-4 py-3 text-base text-gray-800 shadow-sm">

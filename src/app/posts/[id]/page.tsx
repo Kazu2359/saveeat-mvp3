@@ -42,13 +42,19 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
     );
   }
 
-  const [likeRes, commentsRes, likedRes] = await Promise.all([
+  const [likeRes, commentsRes, likerRes, likedRes] = await Promise.all([
     supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id),
     supabase
       .from("post_comments")
       .select("id,body,created_at,user_id", { count: "exact" })
       .eq("post_id", id)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("post_likes")
+      .select("user_id")
+      .eq("post_id", id)
+      .order("created_at", { ascending: false })
+      .limit(12),
     user
       ? supabase
           .from("post_likes")
@@ -61,6 +67,11 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
   const comments = Array.isArray(commentsRes.data) ? commentsRes.data : [];
   const commentCount = commentsRes.count ?? comments.length ?? 0;
   const isLiked = (likedRes as { count?: number }).count ? (likedRes as { count?: number }).count! > 0 : false;
+  const likers: string[] = Array.isArray(likerRes.data)
+    ? likerRes.data
+        .map((l) => (l as { user_id?: string | null }).user_id)
+        .filter((u): u is string => typeof u === "string" && !!u)
+    : [];
   const post: Post = {
     ...data,
     ingredients: Array.isArray((data as { ingredients?: string[] }).ingredients)
@@ -69,6 +80,7 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
     like_count: likeRes.count ?? 0,
     comment_count: commentCount,
     is_liked: isLiked,
+    likers,
     profiles: undefined,
   };
 
@@ -124,6 +136,7 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
               user_id: string;
               profiles?: { name?: string | null; avatar_url?: string | null } | null;
             }[]}
+            initialLikers={likers}
           />
         </div>
       </div>

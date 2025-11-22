@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -19,13 +19,19 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const [likeRes, commentRes, likedRes] = await Promise.all([
-    supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id),
-    supabase.from("post_comments").select("id", { count: "exact", head: true }).eq("post_id", id),
+  const [likeRes, commentRes, likerRes, likedRes] = await Promise.all([
+    supabase.from("post_likes").select("id", { count: "exact" }).eq("post_id", id),
+    supabase.from("post_comments").select("id", { count: "exact" }).eq("post_id", id),
+    supabase
+      .from("post_likes")
+      .select("user_id")
+      .eq("post_id", id)
+      .order("created_at", { ascending: false })
+      .limit(12),
     user
       ? supabase
           .from("post_likes")
-          .select("id", { count: "exact", head: true })
+          .select("id", { count: "exact" })
           .eq("post_id", id)
           .eq("user_id", user.id)
       : Promise.resolve({ count: 0 } as { count?: number }),
@@ -34,11 +40,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const like_count = likeRes.count ?? 0;
   const comment_count = commentRes.count ?? 0;
   const is_liked = (likedRes as { count?: number }).count ? (likedRes as { count?: number }).count! > 0 : false;
+  const likers = Array.isArray(likerRes.data)
+    ? likerRes.data.map((l) => (l as { user_id?: string }).user_id).filter(Boolean)
+    : [];
 
-  return NextResponse.json({ ...data, like_count, comment_count, is_liked });
+  return NextResponse.json({ ...data, like_count, comment_count, is_liked, likers });
 }
 
-// 更新（タイトル/説明/材料タグ/メディアを上書き）
+// 更新（タイトル/本文/タグ/メディア差し替え）
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!id || id === "undefined") {

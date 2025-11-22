@@ -26,6 +26,7 @@ type Detail = {
   is_liked?: boolean;
   body?: string;
   ingredients?: string[];
+  likers?: string[];
 };
 
 function copyToClipboard(text: string) {
@@ -48,12 +49,14 @@ export default function FeedCard({ post }: { post: BasePost }) {
     is_liked: undefined,
     body: post.body,
     ingredients: post.ingredients,
+    likers: [],
   });
   const [expanded, setExpanded] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(0);
   const [commentCount, setCommentCount] = useState<number>(0);
+  const [likers, setLikers] = useState<string[]>([]);
   const [likeError, setLikeError] = useState<string | null>(null);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [likeLoading, startLikeTransition] = useTransition();
@@ -73,10 +76,12 @@ export default function FeedCard({ post }: { post: BasePost }) {
         is_liked: json.is_liked ?? false,
         body: json.body ?? post.body,
         ingredients: Array.isArray(json.ingredients) ? json.ingredients : post.ingredients ?? [],
+        likers: Array.isArray(json.likers) ? json.likers.filter(Boolean) : [],
       });
       setIsLiked(!!json.is_liked);
       setLikeCount(json.like_count ?? 0);
       setCommentCount(json.comment_count ?? 0);
+      if (Array.isArray(json.likers)) setLikers(json.likers.filter(Boolean));
     } catch (err) {
       console.error(err);
     } finally {
@@ -99,6 +104,8 @@ export default function FeedCard({ post }: { post: BasePost }) {
           setLikeError(errMsg);
           return;
         }
+        if (typeof json.like_count === "number") setLikeCount(json.like_count);
+        if (typeof json.is_liked === "boolean") setIsLiked(json.is_liked);
         await fetchDetail();
         setLikeError(null);
       } catch (err: unknown) {
@@ -218,6 +225,21 @@ export default function FeedCard({ post }: { post: BasePost }) {
           {likeError && <span className="text-xs text-red-600">{likeError}</span>}
         </div>
 
+        {likers.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-700">
+            <span className="font-semibold text-gray-900">Liked by</span>
+            {likers.slice(0, 6).map((u) => (
+              <span
+                key={u}
+                className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-emerald-700"
+              >
+                {u?.slice(0, 8) ?? "user"}
+              </span>
+            ))}
+            {likers.length > 6 && <span className="text-gray-500">+{likers.length - 6} more</span>}
+          </div>
+        )}
+
         <div className="space-y-1">
           <h2 className="text-lg font-bold text-gray-900">{post.title}</h2>
           {loadingDetail ? (
@@ -242,11 +264,7 @@ export default function FeedCard({ post }: { post: BasePost }) {
 
         {expanded && (
           <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3">
-            <PostCommentsSection
-              postId={post.id}
-              inputRef={commentRef}
-              onCountSync={(count) => setCommentCount(count)}
-            />
+            <PostCommentsSection postId={post.id} inputRef={commentRef} onCountSync={(count) => setCommentCount(count)} />
           </div>
         )}
       </div>
