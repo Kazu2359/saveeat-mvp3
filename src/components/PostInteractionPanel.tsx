@@ -48,9 +48,7 @@ export default function PostInteractionPanel({
   initialComments,
 }: Props) {
   const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [commentCount, setCommentCount] = useState(
-    initialComments?.length ?? initialCommentCount ?? 0
-  );
+  const [commentCount, setCommentCount] = useState(initialComments?.length ?? initialCommentCount ?? 0);
   const [isLiked, setIsLiked] = useState<boolean>(!!initialIsLiked);
   const [isFollowing, setIsFollowing] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
@@ -60,24 +58,39 @@ export default function PostInteractionPanel({
 
   const tagsToRender = useMemo(() => (tags ?? []).filter(Boolean), [tags]);
 
+  const refreshStats = async () => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { credentials: "include" });
+      const json = await res.json();
+      if (res.ok) {
+        setLikeCount(json.like_count ?? likeCount);
+        setCommentCount(json.comment_count ?? commentCount);
+        setIsLiked(!!json.is_liked);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleLike = () => {
     startLikeTransition(async () => {
       try {
         const method = isLiked ? "DELETE" : "POST";
-        const res = await fetch(`/api/posts/${postId}/like`, { method });
+        const res = await fetch(`/api/posts/${postId}/like`, { method, credentials: "include" });
         const json = await res.json().catch(() => ({}));
         if (!res.ok) {
           const errMsg = json.error === "not_authenticated" ? "ログインしてください" : json.error ?? "いいねに失敗しました";
           setLikeError(errMsg);
           return;
         }
-
-        setIsLiked(!isLiked);
-        setLikeCount((c) => c + (isLiked ? -1 : 1));
+        if (typeof json.like_count === "number") setLikeCount(json.like_count);
+        if (typeof json.is_liked === "boolean") setIsLiked(json.is_liked);
         setLikeError(null);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "いいねに失敗しました";
         setLikeError(msg);
+      } finally {
+        refreshStats();
       }
     });
   };

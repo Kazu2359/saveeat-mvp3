@@ -16,9 +16,10 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   );
   if (error) {
     console.error("like error", error);
-    return NextResponse.json({ error: "failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message ?? "failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
+  const { count } = await supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id);
+  return NextResponse.json({ ok: true, like_count: count ?? 0, is_liked: true });
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +38,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     .eq("user_id", user.id);
   if (error) {
     console.error("unlike error", error);
-    return NextResponse.json({ error: "failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message ?? "failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
+  const { count } = await supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id);
+  return NextResponse.json({ ok: true, like_count: count ?? 0, is_liked: false });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import PostCommentsSection from "./PostCommentsSection";
@@ -61,31 +61,32 @@ export default function FeedCard({ post }: { post: BasePost }) {
 
   const cover = useMemo(() => post.media?.[0]?.url ?? null, [post.media]);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      setLoadingDetail(true);
-      try {
-        const res = await fetch(`/api/posts/${post.id}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "failed");
-        setDetail({
-          like_count: json.like_count ?? 0,
-          comment_count: json.comment_count ?? 0,
-          is_liked: json.is_liked ?? false,
-          body: json.body ?? post.body,
-          ingredients: Array.isArray(json.ingredients) ? json.ingredients : post.ingredients ?? [],
-        });
-        setIsLiked(!!json.is_liked);
-        setLikeCount(json.like_count ?? 0);
-        setCommentCount(json.comment_count ?? 0);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingDetail(false);
-      }
-    };
-    fetchDetail();
+  const fetchDetail = useCallback(async () => {
+    setLoadingDetail(true);
+    try {
+      const res = await fetch(`/api/posts/${post.id}`, { credentials: "include" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "failed");
+      setDetail({
+        like_count: json.like_count ?? 0,
+        comment_count: json.comment_count ?? 0,
+        is_liked: json.is_liked ?? false,
+        body: json.body ?? post.body,
+        ingredients: Array.isArray(json.ingredients) ? json.ingredients : post.ingredients ?? [],
+      });
+      setIsLiked(!!json.is_liked);
+      setLikeCount(json.like_count ?? 0);
+      setCommentCount(json.comment_count ?? 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingDetail(false);
+    }
   }, [post.id, post.body, post.ingredients]);
+
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail]);
 
   const handleLike = () => {
     startLikeTransition(async () => {
@@ -98,8 +99,7 @@ export default function FeedCard({ post }: { post: BasePost }) {
           setLikeError(errMsg);
           return;
         }
-        setIsLiked(!isLiked);
-        setLikeCount((c) => c + (isLiked ? -1 : 1));
+        await fetchDetail();
         setLikeError(null);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "いいねに失敗しました";
