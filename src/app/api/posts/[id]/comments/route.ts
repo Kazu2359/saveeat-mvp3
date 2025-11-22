@@ -6,7 +6,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("post_comments")
-    .select("id,body,created_at,user_id,profiles(name,avatar_url)")
+    .select("id,body,created_at,user_id")
     .eq("post_id", id)
     .order("created_at", { ascending: true });
 
@@ -31,14 +31,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "body_required" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("post_comments").insert({
-    post_id: id,
-    user_id: user.id,
-    body: body.text.trim(),
-  });
-  if (error) {
+  const { data: inserted, error } = await supabase
+    .from("post_comments")
+    .insert({
+      post_id: id,
+      user_id: user.id,
+      body: body.text.trim(),
+    })
+    .select("id,body,created_at,user_id")
+    .single();
+  if (error || !inserted) {
     console.error("comment error", error);
-    return NextResponse.json({ error: "failed" }, { status: 500 });
+    return NextResponse.json({ error: error?.message ?? "failed" }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, comment: inserted });
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import PostMediaShowcase from "@/components/PostMediaShowcase";
+import PostInteractionPanel from "@/components/PostInteractionPanel";
 import { Post } from "@/types/post";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,9 @@ function formatRelativeTime(dateString: string) {
 export default async function PostDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data, error } = await supabase
     .from("posts")
@@ -38,18 +42,33 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
     );
   }
 
-  const [likeRes, commentRes] = await Promise.all([
+  const [likeRes, commentsRes, likedRes] = await Promise.all([
     supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id),
-    supabase.from("post_comments").select("id", { count: "exact", head: true }).eq("post_id", id),
+    supabase
+      .from("post_comments")
+      .select("id,body,created_at,user_id", { count: "exact" })
+      .eq("post_id", id)
+      .order("created_at", { ascending: true }),
+    user
+      ? supabase
+          .from("post_likes")
+          .select("id", { count: "exact", head: true })
+          .eq("post_id", id)
+          .eq("user_id", user.id)
+      : Promise.resolve({ count: 0 } as { count?: number }),
   ]);
 
+  const comments = Array.isArray(commentsRes.data) ? commentsRes.data : [];
+  const commentCount = commentsRes.count ?? comments.length ?? 0;
+  const isLiked = (likedRes as { count?: number }).count ? (likedRes as { count?: number }).count! > 0 : false;
   const post: Post = {
     ...data,
     ingredients: Array.isArray((data as { ingredients?: string[] }).ingredients)
       ? ((data as { ingredients?: string[] }).ingredients ?? [])
       : [],
     like_count: likeRes.count ?? 0,
-    comment_count: commentRes.count ?? 0,
+    comment_count: commentCount,
+    is_liked: isLiked,
     profiles: undefined,
   };
 
@@ -88,72 +107,24 @@ export default async function PostDetail({ params }: { params: Promise<{ id: str
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <PostMediaShowcase media={post.media} alt={post.title} />
 
-          <div className="flex h-full flex-col gap-5 rounded-3xl bg-white/85 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.2em] text-emerald-600">Recipe</p>
-                <h1 className="text-2xl font-bold text-gray-900 leading-tight">{post.title}</h1>
-                <p className="text-sm text-gray-500">
-                  Posted {timeAgo} · by {shortUser}
-                </p>
-              </div>
-              <div className="flex gap-2 text-xs">
-                <button className="rounded-full border border-gray-200 bg-white px-3 py-1 font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                  💬 Comment
-                </button>
-                <button className="rounded-full border border-gray-200 bg-white px-3 py-1 font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                  🔖 Save
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800">
-              <button className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 shadow-sm ring-1 ring-black/5 hover:bg-emerald-50">
-                <span className="text-lg">❤</span>
-                <span>Like</span>
-              </button>
-              <span className="text-gray-700">{post.like_count ?? 0} likes</span>
-              <span className="text-gray-300">•</span>
-              <span className="text-gray-700">{post.comment_count ?? 0} comments</span>
-            </div>
-
-            {post.body && (
-              <div className="rounded-2xl border border-white/60 bg-white px-4 py-3 text-base text-gray-800 shadow-sm">
-                <p className="whitespace-pre-wrap leading-relaxed">{post.body}</p>
-              </div>
-            )}
-
-            {post.ingredients?.length ? (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-gray-900">Ingredients / Tags</p>
-                <div className="flex flex-wrap gap-2">
-                  {post.ingredients.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-sm text-emerald-700 shadow-sm"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-auto flex flex-wrap gap-3 text-sm">
-              <Link
-                href="/feed"
-                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
-              >
-                ← Back to feed
-              </Link>
-              <Link
-                href="/upload"
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 font-semibold text-white shadow-md hover:from-emerald-600 hover:to-emerald-700"
-              >
-                ＋ Post your dish
-              </Link>
-            </div>
-          </div>
+          <PostInteractionPanel
+            postId={post.id}
+            postTitle={post.title}
+            body={post.body}
+            tags={post.ingredients}
+            timeAgo={timeAgo}
+            shortUser={shortUser}
+            initialLikeCount={post.like_count ?? 0}
+            initialCommentCount={commentCount}
+            initialIsLiked={post.is_liked}
+            initialComments={comments as {
+              id: string;
+              body: string;
+              created_at: string;
+              user_id: string;
+              profiles?: { name?: string | null; avatar_url?: string | null } | null;
+            }[]}
+          />
         </div>
       </div>
     </main>

@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase-server";
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data, error } = await supabase
     .from("posts")
     .select("id,user_id,title,body,ingredients,media,created_at")
@@ -15,15 +19,23 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  const [likeRes, commentRes] = await Promise.all([
+  const [likeRes, commentRes, likedRes] = await Promise.all([
     supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", id),
     supabase.from("post_comments").select("id", { count: "exact", head: true }).eq("post_id", id),
+    user
+      ? supabase
+          .from("post_likes")
+          .select("id", { count: "exact", head: true })
+          .eq("post_id", id)
+          .eq("user_id", user.id)
+      : Promise.resolve({ count: 0 } as { count?: number }),
   ]);
 
   const like_count = likeRes.count ?? 0;
   const comment_count = commentRes.count ?? 0;
+  const is_liked = (likedRes as { count?: number }).count ? (likedRes as { count?: number }).count! > 0 : false;
 
-  return NextResponse.json({ ...data, like_count, comment_count });
+  return NextResponse.json({ ...data, like_count, comment_count, is_liked });
 }
 
 // 更新（タイトル/説明/材料タグ/メディアを上書き）
