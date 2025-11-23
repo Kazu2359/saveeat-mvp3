@@ -51,15 +51,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/feed" className="hover:text-black">
                 みんなの投稿
               </Link>
-              <Link href="/myposts" className="hover:text-black">
-                マイ投稿
-              </Link>
-              <Link
-                href="/upload"
-                className="rounded-full bg-black px-4 py-2 !text-white hover:bg-gray-800 transition shadow-sm"
-              >
-                投稿する
-              </Link>
+            <Link href="/myposts" className="hover:text-black">
+              マイ投稿
+            </Link>
+            <Link href="/profile" className="hover:text-black">
+              プロフィール
+            </Link>
+            <Link href="/profile/likes" className="hover:text-black">
+              Like一覧
+            </Link>
+            <Link
+              href="/upload"
+              className="rounded-full bg-black px-4 py-2 !text-white hover:bg-gray-800 transition shadow-sm"
+            >
+              投稿する
+            </Link>
               <LogoutButton />
             </nav>
           </div>
